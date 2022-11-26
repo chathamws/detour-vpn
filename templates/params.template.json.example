@@ -1,0 +1,46 @@
+[
+    {
+		\"ParameterKey\": \"UserDataScript\",
+		\"ParameterValue\": \"${s3_cfpath}/natgw_userdata.sh\"
+	},
+	{
+		\"ParameterKey\": \"StartupScript\",
+		\"ParameterValue\": \"${s3_cfpath}/startupscript.sh\"
+	},
+    {
+		\"ParameterKey\": \"BuildVpc\",
+		\"ParameterValue\": \"${build_vpc}\"
+	},
+	{
+		\"ParameterKey\": \"VpcId\",
+		\"ParameterValue\": \"${vpc_id}\"
+	},
+	{
+		\"ParameterKey\": \"SubnetIds\",
+		\"ParameterValue\": "${ipnets}"
+	},
+	{
+		\"ParameterKey\": \"SshKey\",
+		\"ParameterValue\": \"personal_keys1\"
+	},
+	{
+		\"ParameterKey\": \"OpenVpnFiles\",
+		\"ParameterValue\": \"${s3_cfpath}/openvpn/\"
+	},
+	{
+		\"ParameterKey\": \"R53Zone\",
+		\"ParameterValue\": \"${r53_zone}\"
+	},
+	{
+		\"ParameterKey\": \"R53Record\",
+		\"ParameterValue\": \"ovpn\"
+	},
+	{
+		\"ParameterKey\": \"LanSubnet\",
+		\"ParameterValue\": \"192.168.1.0/24\"
+	},
+	{
+		\"ParameterKey\": \"LanIpAddr\",
+		\"ParameterValue\": \"192.168.1.2\"
+	}
+]

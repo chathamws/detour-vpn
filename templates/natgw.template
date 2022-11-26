@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    00d03f86-d42f-4c78-86e5-2854f9c64ba0:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -490
+        'y': 260
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 35c55952-7af4-4a68-b000-58ac9e2df156
+    35c55952-7af4-4a68-b000-58ac9e2df156:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -340
+        'y': 250
+      z: 0
+      embeds: []
+    cdf73f64-e588-435a-8ea3-ec7fb26ab68c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -410
+        'y': 350
+      z: 0
+Parameters:
+  UserDataParameter:
+    Type: String
+    Default: touch /test2file
+    Description: Enter userdata shell script.
+  UserDataScript:
+    Type: String
+    Description: Enter s3 URI path to script to run at first boot
+  StartupScript:
+    Type: String
+    Description: Enter s3 URI path to script to run every boot
+  BuildVpc:
+    Type: String
+    Default: no
+  VpcId:
+    Type: String
+    Default: vpc-a1d944c6
+    Description: ID of the VPC target to use
+  SubnetIds:
+    #Type: CommaDelimitedList
+    Type: String
+    Description: List of subnets
+    Default: subnet-056e44bf50a7f5f211,subnet-00fe0d47c3d6153ebb,subnet-02bbedc830b5d0db99
+  AzList:
+    Type: CommaDelimitedList
+    Description: Lis of Availability Zones
+    Default: us-west-2a,us-west-2b
+  SshKey:
+    Type: String
+    Description: Name of the EC2 SSH key to place on the instance
+    Default: personal_keys11
+  LanSubnet:
+    Type: String
+    Description: Your LAN subnet
+    Default: 192.168.2.0/24
+  LanIpAddr:
+    Type: String
+    Description: Destination to forward all traffic
+    Default: 192.168.2.2
+  R53Zone:
+    Type: String
+    Description: Route53 private DNS zone to update
+    Default: pw.internal
+  R53Record:
+    Type: String
+    Description: Host record to update
+    Default: ntest
+  OpenVpnFiles:
+    Type: String
+    Description: S3 path containing OpenVpn server.conf, certs, and DDClient configs
+    Default: s3://wsc-home-configg/openvpn/
+Conditions:
+  SetVpcInfo: !Equals [!Ref BuildVpc, "yes"]
+Resources:
+  ASASG37GYQ:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AvailabilityZones: !Ref AzList
+      LaunchConfigurationName: !Ref ASLC52PWH
+      MinSize: '1'
+      MaxSize: '1'
+      Tags:
+        - Key: Name
+          Value: natgw
+          PropagateAtLaunch: 'true'
+      #VPCZoneIdentifier: !Ref SubnetIds
+      VPCZoneIdentifier:
+        - ","
+        - !If
+          - SetVpcInfo
+          - Fn::ImportValue: !Sub vpc-${AWS::StackName}-PublicSubnets
+          - !Ref SubnetIds
+      
+      #!If [SetVpcInfo, Fn::ImportValue:
+      #    !Sub "vpc-${AWS::StackName}-VpcId", !Ref SubnetIds]       
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 00d03f86-d42f-4c78-86e5-2854f9c64ba0
+  ASLC52PWH:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 10
+            VolumeType: gp2
+            DeleteOnTermination: true
+      IamInstanceProfile: !Ref Ec2SsmInstanceProfile
+#      IamInstanceProfile: VPN_Server_Role
+      ImageId: ami-0e34e7b9ca0ace12d
+      InstanceType: t3a.nano
+      KeyName: !Ref SshKey
+      SecurityGroups:
+        - !Ref EC2SG4PAMZ
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash
+            aws --region us-west-2 s3 cp ${UserDataScript} /usr/bin/userdata.sh
+            aws --region us-west-2 s3 cp ${StartupScript} /usr/bin/startupscript.sh
+            #Set parameters
+            parms="/parameters.sh"
+            echo "r53record=${R53Record}" >>$parms
+            echo "r53zone=${R53Zone}" >>$parms
+            echo "openvpnfiles=${OpenVpnFiles}" >>$parms
+            echo "lansubnet=${LanSubnet}" >>$parms
+            echo "lanipaddr=${LanIpAddr}" >>$parms
+            #Execute custom userdata
+            echo "Cloudformation userdata finished" >/status.log
+            sh /usr/bin/userdata.sh
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 35c55952-7af4-4a68-b000-58ac9e2df156
+  EC2SG4PAMZ:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: natgw
+      GroupDescription: Security group for NATGW instance
+#      GroupName: NatGwSg
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: '1'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '1'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '1'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '1'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+#      VpcId: !Ref VpcId
+      VpcId:
+        !If [SetVpcInfo, Fn::ImportValue:
+          !Sub "vpc-${AWS::StackName}-VpcId", !Ref VpcId]        
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 642b1a36-8f4a-4cd7-b59f-fb0a12391278
+  Ec2SsmIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: 
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonVPCFullAccess
+        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
+  Ec2SsmInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Path: /
+      Roles: [!Ref Ec2SsmIamRole]

@@ -1,0 +1,8 @@
+ssl=yes
+protocol=cloudflare
+use=cmd
+cmd='curl -s http://169.254.169.254/latest/meta-data/public-ipv4'
+zone=paxandwayne.net
+login=email@address.com
+password=CLOUDFLAREAPIKEYHERE
+comma separated list of domains and host records to update at cloudflare ex. domain.com,host1.domain.com,host2.domain.com
