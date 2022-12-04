@@ -109,6 +109,8 @@ mkdir -p /ccd
 echo 
 mkdir -p /var/log/openvpn
 mv client /ccd/
+chmod 644 *.key
+chmod 644 *.crt
 openvpn --config server.conf
 
 echo "Startup script finished" >>$logfile
